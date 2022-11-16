@@ -1,0 +1,157 @@
+---
+title: "Activity #09"
+author: "Sarah Kircher with Gaurang Kakade"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+library(rvest)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(trackdown)
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  fig.align = "center"
+)
+```
+
+```{r webScraping}
+# This code chunk scraps the data for each social media platform and assigns it to a data frame.
+# Facebook Revenue
+# Use element [[2]]
+facebookRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/facebook-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Instagram Revenue
+# Use element [[2]]
+instagramRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/instagram-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Twitter Revenue
+# Use element [[2]]
+twitterRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/twitter-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Snapchat Revenue
+# Use element [[2]]
+snapchatRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/snapchat-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Pinterest Revenue
+# Use element [[2]]
+pinterestRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/pinterest-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+```
+
+```{r dataCleaning}
+# This code chunk cleans each data frame and assigns it to a new data frame.
+# Facebook Data ----
+# Create data frame of only revenue from 2016 - 2021
+# Change column names
+facebookRev <- bind_cols(facebookRevenue[[2]])
+
+colnames(facebookRev)[1] ="Year"
+colnames(facebookRev)[2] ="FB_rev"
+
+facebookRev <- facebookRev %>%
+  filter(Year != c("2010", "2011", "2012", "2013", "2014", "2015"))
+
+# Instagram Data ----
+# Create data frame of only revenue from 2016 - 2021
+# Change revenue column name
+instagramRev <- bind_cols(instagramRevenue[[2]])
+
+colnames(instagramRev)[2] ="IG_rev"
+
+instagramRev <- instagramRev %>%
+  filter(Year != c("2015"))
+  
+# Twitter Data ----
+# Create data frame of only revenue from 2016 - 2021
+# Change revenue column name
+twitterRev <- bind_cols(twitterRevenue[[2]])
+
+colnames(twitterRev)[2] ="TW_rev"
+
+twitterRev <- twitterRev %>%
+  filter(Year != c("2012", "2013", "2014", "2015"))
+
+# Snapchat Data ----
+# Create data frame of only revenue from 2016 - 2021
+# Change revenue column name
+snapchatRev <- bind_cols(snapchatRevenue[[2]])
+
+colnames(snapchatRev)[2] ="SC_rev"
+
+snapchatRev <- snapchatRev %>%
+  filter(Year != c("2015"))
+
+# Pinterest Data ----
+# Create data frame of only revenue from 2016 - 2021
+# Change revenue column name
+pinterestRev <- bind_cols(pinterestRevenue[[2]])
+
+colnames(pinterestRev)[2] ="PI_rev"
+```
+
+```{r dataMerge}
+# This code chunk merges all of the social media revenue data frames into one data frame.
+# Put all social media revenue data frames into list
+all_revenue <- list(facebookRev, instagramRev, twitterRev, snapchatRev, pinterestRev)
+
+# Merge all data frames in the above list
+all_revenue <- all_revenue %>% reduce(full_join, by = 'Year')
+```
+
+```{r revenuePlot, fig.align='center'}
+# Create ggplot2 for social media revenue data over time
+# One line/trend for each social media platform
+colors <- c("Facebook" = " dark blue", "Instagram" = "pink", "Twitter" = "blue", 
+            "Snapchat" = "yellow", "Pinterest" = "red")
+
+ggplot(
+  data = all_revenue, 
+  aes(x = Year)
+  ) + 
+  geom_point(aes(y = FB_rev, color = "Facebook"), size = 2.25) +
+  geom_point(aes(y = IG_rev, color = "Instagram"), size = 2.25) +
+  geom_point(aes(y = TW_rev, color = "Twitter"), size = 2.25) +
+  geom_point(aes(y = SC_rev, color = "Snapchat"), size = 2.25) +
+  geom_point(aes(y = PI_rev, color = "Pinterest"), size = 2.25) +
+
+  geom_line(aes(y = FB_rev, color = "Facebook"), size = 1) + 
+  geom_line(aes(y = IG_rev, color = "Instagram"), size = 1) +
+  geom_line(aes(y = TW_rev, color = "Twitter"), size = 1) +
+  geom_line(aes(y = SC_rev, color = "Snapchat"), size = 1) +
+  geom_line(aes(y = PI_rev, color = "Pinterest"), size = 1) +
+  
+  labs(x = "Year", y = "Revenue (Billions)", color = "Apps") +
+  ggtitle("Annual Revenue of Social Media Platforms Over Time") +
+  scale_color_manual(values = colors) +
+  scale_y_continuous(labels = scales::dollar_format()) +
+  theme_minimal()
+
+```
+Please type narrative text here.

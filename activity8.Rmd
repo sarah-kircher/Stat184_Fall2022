@@ -1,0 +1,297 @@
+---
+title: "Activity 8 - Bringing Everything Together in R Markdown"
+author: "Sarah Kircher"
+date: "`r Sys.Date()`"
+output:
+  html_notebook: default
+  html_document:
+    code_folding: hide
+    code_download: true 
+---
+
+```{r firstChunk, include = FALSE}
+library(ggplot2)
+library(dplyr)
+library(janitor)
+library(kableExtra)
+library(knitr)
+library(dcData)
+data(diamonds)
+data(BabyNames)
+```
+
+# The Collatz Conjecture
+
+### Brief Explanation of the Collatz Conjecture
+
+The Collatz Conjecture asks whether or not repeating the same two operations on every positive integer will transform the original input into 1.  The Collatz Conjecture can be expressed in the following way:
+
+* If the input number is even, then the number is divided by 2.
+* If the input number is odd, then the number is multiplied by 3 and then added to 1.
+* If the input number does equal one, then the operations are stopped.
+
+The "stopping time" for the input value is the number of times needed to invoke the function in order to ultimately obtain the number 1. Each time a arithmetic operation is performed on either an even or odd number, a counter variable is updated. If the number does not equal 1, then the number and counter are recycled through the updateNum function several times until 1 is reached.  Once the number 1 is obtained, the value of the counter variable is returned, which is the "stopping time" for the input number.
+
+
+```{r collatzConjecture, echo=TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 80), warning=FALSE, fig.width=6, fig.height=5}
+
+# This function takes the number and the counter value to calculate the stopping time for that number.
+updateNum <- function(num, counter){
+  if (num %% 2 == 0){
+    num <- num / 2
+    counter <- counter + 1
+  } else if (num %% 2 == 1){
+    num <- (3 * num) + 1
+    counter <- counter + 1
+  }
+
+  if (num == 1){
+    return (counter)
+  } else {
+    updateNum(num, counter)
+  }
+}
+
+# This variable holds the returned count value from the function.
+countValue <- updateNum(num = 2633, counter = 0)
+
+# Assigns vector (1:10000) to variable
+firstTenThous <- (1:10000)
+
+# Initializes counter variable
+counter <- 0
+
+# Creates a vector of stopping times for the Collatz Conjecture
+stoppingTimes <- sapply(firstTenThous, updateNum, counter = counter)
+
+# Creates a histogram of the stopping times using ggplot
+# Add a title, fill and border colors for bars, x-axis and y-axis labels, x-axis limits
+ggplot() + 
+  geom_histogram(aes(stoppingTimes), bins = 20, col=I("blue"), fill = "orange") +
+  ggtitle("Histogram of Stopping Times for Collatz Conjecture") +
+  xlab("Stopping Times") +
+  ylab("Frequency") +
+  xlim(c(0, 300)) +
+  theme_minimal()
+
+```
+
+### Distribution of "Stopping Times"
+
+Neil was most curious about the distribution of "stopping times" for the first 10,000 positive integers.  In order to show the "stopping times" for the first 10,000 numbers, a vector needed to be created using the sapply function to find the stopping time for each number up to 10,000.  The "stopping times" vector was used to create a histogram, which is plotted above.  Looking at the distribution of stopping times, the data is skewed right.  It is clear that the stopping time of 50 has the highest frequency from the histogram.  As the stopping time increases, then the frequency of the stopping time decreases.
+
+\pagebreak
+
+# Price of Diamonds
+
+In order to investigate what attributes of diamonds impact the price of diamonds, I looked at the diamonds data set from the ggplot2 package.  The dataset contains 10 attributes of almost 54,000 diamonds.  The 10 attributes include carat, cut, color, clarity, depth, table, price, and dimensions (length, width, depth) of each diamond.  For the diamond data set, I would like to see the relationship between the carat and price of a diamond for each different cut and color of the diamond.  The different cuts include fair, good, very good, premium, and ideal.  The colors include D (best), E, F, G, H, I, and J (worst). 
+
+Through the creation of two data visualizations and two summary tables, I wanted to learn how the relationships between the carat and the price of a diamond vary between the different cuts and colors of a diamond. To see the relationship between the carat and price of a diamond, I created two scatterplots with lines of best fit for each different diamond cut and color to see the trend between carat and the price of each type of diamond.  For the below plots, I put the carat of the diamond on the x-axis and the price of the diamond on the y-axis.  Regarding the cut of the diamond, there are five scatterplots and lines of best fit - one for each cut.  Regarding the color of the diamond, there are seven scatterplots and lines of best fit - one for each color.
+
+In addition to this, I created two summary tables of six statistics each of the price of diamonds relative to the cut and color of the diamonds to go along with the respective data visualizations.  The first data visualization and summary table show the relationships between the carat, price, and cut of the diamonds.  The second data visualization and summary table show the relationships between the carat, price, and color of the diamonds.
+
+```{r diamondsCut, echo=TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 80), warning=FALSE, fig.width=6, fig.height=3}
+## How does the relationship between the carat and price of a diamond vary depending on the diamond cut?
+
+# Plan ----
+# Aim: Plot carat of diamond vs. price of diamond for each diamond cut
+# Geometries: point, smooth
+# Mappings: carat, price
+# Facet: cut
+
+# Assign the loaded data set to a data frame variable
+diamondsData <- diamonds
+
+# Plots organized by diamond cut using facet
+# geom_point and geom_smooth used to create scatterplots with lines of best fit
+# x-axis / y-axis labels, title, and subtitle added for increased viewer comprehension
+  ggplot(
+    data = diamondsData,
+    mapping = aes(x = carat, y = price)) +
+  geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+  geom_smooth(span = 0.75, formula = y ~ x, method = "loess") +
+  theme_minimal() +
+  facet_wrap(vars(cut)) +
+  ylab("Price (U.S. Dollars)") +
+  xlab("Carat (Grams)") +
+  ggtitle("Carat vs. Price of Diamond by Diamond Cut", 
+          subtitle = "As the quality of the diamond cut increases, the price per carat increases.")
+
+```
+
+The first data visualization can be used to gain an understanding of the relationships between the carat and price of a diamond between the different diamond cuts.  Looking at the five plots, there are a lot of cases in each plot, but the points along with the line of best fit show the trend between the carat and the price of a diamond for each cut.  There is a positive correlation/slope between the carat and the price of a diamond for each diamond cut.  It is important to understand that as the quality of the diamond cut increases, the slope between the carat and the price of a diamond increases quicker.  This indicates that as the carat in grams of a diamond increase, the price in U.S. dollars of a diamond increase as well for each diamond cut.  If someone plans on purchasing a diamond in the future, they must understand that a diamond with a higher quality cut will cost more per carat compared to a diamond with a lower quality cut.
+
+```{r diamondsSummary1, echo=TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 80), results = "asis", layout="l-body-outset", fig.width=6, fig.height=4, fig.pos="H"}
+
+# Creates new diamonds data frame of statistics of price relative to the diamond cut
+# Groups the diamonds data set by cut
+# Selects the cut and price before calculating stats
+# Calculates the count, minimum, first quartile, median, third quartile, maximum, mean
+# Adds row and column titles
+diamond_price_stats <- diamonds %>%
+  group_by(cut) %>%
+  select(cut, price) %>%
+  summarise(across(c(price), list(
+    Min = min,
+    Q1 = ~quantile(., probs = 0.25),
+    Median = median,
+    Q3 = ~quantile(., probs = 0.75),
+    Max = max,
+    Mean = mean
+    ))
+  ) %>% 
+  adorn_title(
+    placement = "combined", 
+    row_name = "Cut",
+    col_name = "Statistics")
+
+# Rounds decimals to two digits past decimal point
+rounded_price_stats <- diamond_price_stats %>%
+  mutate_if(is.numeric, round, digits = 2)
+
+# Polishing the Table - nicer appearance
+rounded_price_stats %>%
+  kable(
+    caption = "Diamond Price Relative to Diamond Cut Summary Table",
+    booktabs = TRUE,
+    align = c("l", rep("c", 6))
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "condensed"),
+    font_size = 11,
+    latex_options = "HOLD_position"
+  )
+```
+
+Looking at the diamond price relative to the diamond cut summary table, there are a few takeaways from the six statistics in the table.  The statistics used in the table include minimum, first quartile, median, third quartile, maximum, and mean.  Regarding the mean, it is interesting to see that the ideal-cut diamond on average has the least expensive price compared to the other diamond cuts.  I would have suspected the highest quality cut to have the most expensive price.  In addition to this, a premium-cut diamond has the maximum price overall compared to the other cuts at a price of $18,823.  Looking at the premium and ideal cuts in the data visualization, the ideal cut line of best fit hits the maximum and then decreases, which is different from the premium cut line of best fit that plateaus and continues to increase after hitting its peak.  In conclusion, it seems that the diamond with the largest prices overall is the premium-cut diamond.  The summary table allows the viewer to quickly see the distribution of the prices of diamonds relative to the different cuts of diamonds in addition to the data visualization. 
+
+```{r diamondsColor, echo=TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 80), fig.width=6, fig.height=4}
+
+# How does the relationship between the carat and price of a diamond vary depending on the diamond color?
+
+# Plan ----
+# Aim: Plot carat of diamond vs. price of diamond for each diamond color
+# Geometries: point, smooth
+# Mappings: carat, price
+# Facet: color
+
+# Assign the data set to a data frame variable
+diamondsData <- diamonds
+
+# Plots organized by diamond color using facet
+# geom_point and geom_smooth used to create scatterplots with lines of best fit
+# x-axis / y-axis labels, title, and subtitle added for increased viewer comprehension
+ggplot(
+  data = diamondsData,
+  mapping = aes(x = carat, y = price)) +
+  geom_point(shape = "circle", size = 1.5, colour = "#FFA500") +
+  geom_smooth(span = 0.75, formula = y ~ x, method = "loess") +
+  theme_minimal() +
+  facet_wrap(vars(color)) +
+  ylab("Price (U.S. Dollars)") +
+  xlab("Carat (Grams)") +
+  ggtitle("Carat vs. Price of Diamond by Diamond Color", 
+          subtitle = "As the color of the diamond changes, the price per carat changes.")
+
+```
+
+The second data visualization can be used to gain an understanding of the relationships between the carat and price of a diamond between the different colors of diamonds.  Looking at the seven plots, the lines of best fit show the trend between the carat and the price of a diamond for each color.  There is a positive correlation/slope between the carat and the price of a diamond for each diamond color.  It is interesting to look at how the line of best fit behaves for each diamond color after reaching the maximum.  After reaching the maximum, the line of best fit either decreases, plateaus, or increases. Looking at the diamond colors D, E, and F, the price per carat decreases after reaching a maximum between 2 and 2.5 carats.  Looking at the diamond colors G, H, and I, the price per carat decreases slightly and plateaus after reaching a maximum around 2 carats.  Looking at the diamond color J, the price per carat increase slightly after reaching a maximum around 2 carats.    
+
+```{r diamondsSummary2, echo=TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 80), results = "asis", layout="l-body-outset", fig.width=6, fig.height=4, fig.pos="H"}
+
+# Creates new diamonds data frame of statistics of price relative to the diamond cut
+# Groups the diamonds data set by cut
+# Selects the cut and price before calculating stats
+# Calculates the count, minimum, first quartile, median, third quartile, maximum, mean
+# Adds row and column titles
+diamond_price_stats <- diamonds %>%
+  group_by(color) %>%
+  select(color, price) %>%
+  summarise(across(c(price), list(
+    Min = min,
+    Q1 = ~quantile(., probs = 0.25),
+    Median = median,
+    Q3 = ~quantile(., probs = 0.75),
+    Max = max,
+    Mean = mean
+    ))
+  ) %>% 
+  adorn_title(
+    placement = "combined", 
+    row_name = "Color",
+    col_name = "Statistics")
+
+# Rounds decimals to two digits past decimal point
+rounded_price_stats <- diamond_price_stats %>%
+  mutate_if(is.numeric, round, digits = 2)
+
+# Polishing the Table - nicer appearance
+rounded_price_stats %>%
+  kable(
+    caption = "Diamond Price Relative to Diamond Color Summary Table",
+    booktabs = TRUE,
+    align = c("l", rep("c", 6))
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "condensed"),
+    font_size = 11,
+    latex_options = "HOLD_position"
+  )
+```
+
+Looking at the diamond price relative to the diamond color summary table, there are a few takeaways from the six statistics in the table.  The statistics used in the table include minimum, first quartile, median, third quartile, maximum, and mean.  Regarding the mean, it is interesting to see that the J-color diamond on average has the most expensive price compared to the other diamond colors, specifically due to the fact that it is considered the worst color in the documentation about the diamonds data set.  If the J-color diamond is the "worst" color, then why is it priced the highest?  I would have suspected the D-color diamond, which is considered the "best" color diamond, to have the most expensive price on average.  Comparing the D-color and J-color diamonds in the data visualization, it is interesting to look at the spread of data points in each scatterplot.  The spread of data points is much larger in the J-color plot compared to the less variability in the D-color plot.  In conclusion, it seems that the diamond with the largest prices overall is the J-color diamond.  The summary table allows the viewer to quickly see the distribution of the prices of diamonds relative to the different colors of diamonds (D-J) in addition to the data visualization. 
+
+\pagebreak
+
+# What have I learned in STAT 184?
+
+Over the summer, I was first exposed to R, R Studio, and R Markdown through an REU program at Ursinus College in Collegeville, Pennsylvania, where I researched how the COVID-19 pandemic response impacted mental health in the United States.  Throughout the program, I created several data visualizations as well as conducted linear regression analysis with the U.S. states' stringency indices and reported anxiety and depression symptoms of adults.  Even though I had a brief background in R prior to STAT 184, this course has allowed me to extend and expand my knowledge in R, R Studio, and R Markdown.  
+
+Using what we have learned this semester, I am able to create higher quality graphs and data visualizations that are clean and can easily be interpreted by the intended audience.  When I am coding these visualizations, I understand the lines of the code that create the different aspects of the plots.  In addition to this course, I am taking SC 103N (Data Meets Design) in which I have learned the different principles of data visualizations and how to apply them when creating plots.  The four key components include consistency, contrast, alignment, and proximity. I can use these principles in addition to the principles outlined by Tufte and Kosslyn to create clean and effective data visualizations.
+
+Throughout this semester, I have become more confident in my coding abilities in R programming through the use of the Plan-Improve-Code-Polish method.  I learned that planning is the most important step before jumping into creating a data visualization or conducting data analysis, which is something I will continue to utilize in the future.  The PCIP would have been very helpful throughout the REU program.
+
+In addition to this, I have learned the importance of documentation inside and outside of my coding.  This semester, I have become much more thorough when it comes to commenting and explaining what each aspect of the code means.  This will help me in the future when I go back to look at my previous projects. Lastly, I have become more purposeful when creating data visualizations through understanding why I am creating the visualization, what the visualization represents, what context the visualization needs, and what the audience needs to takeaway from the visualization.
+
+```{r familyNames, echo=TRUE, tidy = TRUE, tidy.opts = list(width.cutoff = 80), fig.width=6, fig.height=3, warning=FALSE}
+
+## What is distribution of Sarah's immediate family's names over time?
+
+## Data set - Baby Names - dcData package
+## Aim: display the trend of each first name of Sarah's immediate family over time
+## Geometry: line
+## Mappings: year (x), totalBirths (y), name (color - changes colors of lines to match name)
+
+## Create a vector with the names that will be plotted
+family_names <- c("Jonathan", "Alison", "Sarah", "Chloe")
+
+# Group data by the attributes of name and year
+# Filter grouped data by the given names in the vector family_names
+# Summarize the grouped/filtered data by summing the births each year for each name in family_names
+Tmp <- group_by(BabyNames, name, year) %>%
+  filter(name %in% family_names) %>%
+  summarise(totalBirths = sum(count), .groups = 'drop')
+
+## Plot the data with the names in family_names and the birth counts for each name
+## Add line for each specified name in family_names
+## Add y-axis and x-axis labels for clarity and understanding
+## Add title and subtitle for comprehension of the data visualization
+## Change the legend title using labs(colour = ....)
+ggplot(data = Tmp) +
+  geom_line(aes(x = year, y = totalBirths, color = name)) +
+  ylab("Frequency of Name") +
+  xlab("Year") +
+  ggtitle("Trends of the Kircher Family's First Names Over Time", subtitle = "'Sarah' has been the most popular name over time compared to the other names.") +
+  labs(colour = "First Names") 
+
+```
+
+
+My favorite project from this semester has been creating a distribution of the Kircher Family's Names, because I could apply my coding abilities to a read-world data set and I could share it with my family. It was also cool to see how often my name was used since 1875.
+
+This semester, I have thoroughly enjoyed working in the R programming language as well as learning more about the vast amount of its capabilities to create effective and efficient data visualizations to communicate data to a specific audience of viewers. I look forward to using the skills I learned in STAT 184 in future PSU courses as well as in my actuarial internship this upcoming summer.
+
+
+
+
+

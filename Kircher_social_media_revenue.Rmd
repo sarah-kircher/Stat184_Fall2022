@@ -1,0 +1,176 @@
+---
+title: "Activity #09 - Annual Revenue of Social Media Platforms"
+author: "Sarah Kircher with Gaurang Kakade"
+date: "`r Sys.Date()`"
+output:
+  html_notebook: default
+  html_document:
+    code_folding: hide
+    code_download: true 
+---
+
+```{r setup, include = FALSE}
+# This code chunk loads all of the needed packages into the environment and sets all of the code chunk options for the entire document.
+
+library(rvest)
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(trackdown)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  fig.align = "center"
+)
+```
+
+```{r webScraping}
+# Guiding question - How has the annual revenues of popular social media platforms changed over time?
+# Data - annual revenue of five social media platforms from the Business of Apps
+
+# This code chunk scraps the data for each social media platform and assigns it to a data frame.
+# The social media platforms include Facebook, Instagram, Twitter, Snapchat, and Pinterest.
+
+# Facebook Revenue
+# Use element [[2]] - table of annual revenue
+facebookRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/facebook-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Instagram Revenue
+# Use element [[2]] - table of annual revenue
+instagramRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/instagram-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Twitter Revenue
+# Use element [[2]] - table of annual revenue
+twitterRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/twitter-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Snapchat Revenue
+# Use element [[2]] - table of annual revenue
+snapchatRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/snapchat-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+# Pinterest Revenue
+# Use element [[2]] - table of annual revenue
+pinterestRevenue <- read_html(
+  x = "https://www.businessofapps.com/data/pinterest-statistics/"
+) %>%
+  html_elements(css = "table") %>%
+  html_table()
+
+```
+
+```{r dataCleaning}
+# This code chunk cleans each data frame scraped from the web and assigns it to a new data frame.
+# The columns of the data frames are renamed for clearer column names once data frames are joined.
+# Each data frame is filtered to include the annual revenues from 2016 - 2021 for each social media platform.
+
+# Facebook Revenue Data ----
+facebookRev <- bind_cols(facebookRevenue[[2]])
+
+colnames(facebookRev)[1] ="Year"
+colnames(facebookRev)[2] ="FB_rev"
+
+facebookRev <- facebookRev %>%
+  filter(Year != c("2010", "2011", "2012", "2013", "2014", "2015"))
+
+# Instagram Revenue Data ----
+instagramRev <- bind_cols(instagramRevenue[[2]])
+
+colnames(instagramRev)[2] ="IG_rev"
+
+instagramRev <- instagramRev %>%
+  filter(Year != c("2015"))
+  
+# Twitter Revenue Data ----
+twitterRev <- bind_cols(twitterRevenue[[2]])
+
+colnames(twitterRev)[2] ="TW_rev"
+
+twitterRev <- twitterRev %>%
+  filter(Year != c("2012", "2013", "2014", "2015"))
+
+# Snapchat Revenue Data ----
+snapchatRev <- bind_cols(snapchatRevenue[[2]])
+
+colnames(snapchatRev)[2] ="SC_rev"
+
+snapchatRev <- snapchatRev %>%
+  filter(Year != c("2015"))
+
+# Pinterest Revenue Data ----
+pinterestRev <- bind_cols(pinterestRevenue[[2]])
+
+colnames(pinterestRev)[2] ="PI_rev"
+```
+
+```{r dataMerge}
+# This code chunk merges all of the social media revenue data frames into one joined data frame.
+
+# Put all social media revenue data frames into list for data frame join
+all_revenue <- list(facebookRev, instagramRev, twitterRev, snapchatRev, pinterestRev)
+
+# Merge all data frames in the above list into one data frame all_revenue
+all_revenue <- all_revenue %>% reduce(full_join, by = 'Year')
+```
+
+```{r revenuePlot, fig.align='center'}
+# This code chunk creates a time series graph for the revenues of five social media platforms from 2016 to 2021 using ggplot, which includes the line and point geometries.
+
+# The colors of the lines are assigned to the name of the social media platform in order to easily create the legend on the plot.
+colors <- c("Facebook" = " dark blue", "Instagram" = "pink", "Twitter" = "blue", 
+            "Snapchat" = "yellow", "Pinterest" = "red")
+
+# The plot will include one line for each of the five social media platforms (geom_line).
+# Each line will have the data points as well for easy viewer comprehension (geom_point).
+ggplot(
+  data = all_revenue, 
+  aes(x = Year)
+  ) + 
+  geom_point(aes(y = FB_rev, color = "Facebook"), size = 2.25) +
+  geom_point(aes(y = IG_rev, color = "Instagram"), size = 2.25) +
+  geom_point(aes(y = TW_rev, color = "Twitter"), size = 2.25) +
+  geom_point(aes(y = SC_rev, color = "Snapchat"), size = 2.25) +
+  geom_point(aes(y = PI_rev, color = "Pinterest"), size = 2.25) +
+
+  geom_line(aes(y = FB_rev, color = "Facebook"), size = 1) + 
+  geom_line(aes(y = IG_rev, color = "Instagram"), size = 1) +
+  geom_line(aes(y = TW_rev, color = "Twitter"), size = 1) +
+  geom_line(aes(y = SC_rev, color = "Snapchat"), size = 1) +
+  geom_line(aes(y = PI_rev, color = "Pinterest"), size = 1) +
+  
+# The axes, legend, and plot are clearly titled for the viewer.
+# The y-axis tick mark labels are formatted to include a dollar sign and "B" for billions.
+  labs(x = "Year", y = "Revenue (Billions)", color = "Apps") +
+  ggtitle("Annual Revenue of Social Media Platforms Over Time") +
+  scale_color_manual(values = colors) +
+  scale_y_continuous(labels = scales::dollar_format()) +
+  theme_minimal()
+
+```
+
+The above visualization shows a line graph visualization of the annual revenue of social media platforms over time. In this visualization, the x-axis is labeled as year whereas the y-axis is labeled as revenue in (billions of dollars). The range of years on the x-axis is from 2016 to 2021. On the other hand, the revenue in billions ranges from 0 to 120. In this particular line graph visualization, we are going to observe the annual revenue over time of popular social media platforms like Facebook (represented by dark blue), Instagram (represented by pink), Twitter (represented by blue), Snapchat (represented by yellow), and Pinterest (represented by red). 
+
+In 2016, we can note that apps such as Pinterest, Snapchat, Twitter, and Instagram made a little more than one billion dollars. In contrast, Facebook had revenue of nearly 30 billion dollars making it the most profitable of all platforms. In 2017, Twitter, Snapchat, and Pinterest had almost the same revenue as in 2016 whereas Instagram seems to have jumped by a few billion dollars. Facebook continued to dominate the annual revenue in 2017, with a jump to nearly 45 billion dollars. 
+
+In the year 2018, Twitter, Snapchat, and Pinterest continue to have the same revenue as in 2016 and 2017 but Instagram’s annual revenue takes a leap from three or four billion dollars to a little shy of 15 billion dollars (approximately 12 or 13 billion). On the contrary, Facebook experiences a jump of almost 15 billion dollars in its annual revenue (i.e. 45 billion to 60 billion). In 2019, Twitter, Snapchat, and Pinterest continue to have the same revenue as in 2016, 2017, and 2018 whereas Instagram undergoes a boost of more or less five billion dollars reaching the revenue limit of nearly 18 billion dollars. We can observe a steady jump in the annual revenue of Facebook of roughly 15 billion dollars (i.e. 58 billion to 73 billion). 
+
+In 2020, Snapchat, Pinterest, and Twitter collect the same revenue as in 2016, 2017, 2018, and 2019. In contrast, Instagram experiences a leap of close to 30 billion dollars, and Facebook’s revenue increases to nearly 88 billion dollars in 2020. In 2021, we observe that social media platforms like Twitter, Snapchat, and Pinterest undergo a small-scale jump in revenue in comparison to the past years. Instagram receives a bigger leap in revenue to nearly 47 billion dollars from close to 30 billion dollars making it a boost of approximately 17 billion dollars. Facebook instead takes on the largest jump in revenue from around 88 billion dollars to practically 120 billion dollars. 
+
+From the above visualization, we can discern that Facebook has always had a positively increasing slope over the years indicating a gradual rise in its revenue annually. Instagram had close to a zero slope from 2016 to 2017 but then saw a gradual increase in slope over the next few years. The rest of the platforms like Pinterest, Snapchat, and Twitter had a zero slope throughout the span of 5 years indicating that their annual revenue remained constant.
